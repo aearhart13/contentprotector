@@ -8,11 +8,9 @@
     <ol>
         <li>Searches YouTube for channels using these queries:
             <ul>
-                <li>"Ryan Hall Y'all"</li>
-                <li>"Ryan Hall Yall weather"</li>
-                <li>"Ryan Hall storm chase"</li>
-                <li>"Ryan Hall" weather channel</li>
-                <li>"Ryan Hall tornado"</li>
+                {% for q in search_queries %}
+                <li>{{ q }}</li>
+                {% endfor %}
             </ul>
         </li>
         <li>Fetches full details for each discovered channel</li>

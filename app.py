@@ -137,9 +137,11 @@ def scan():
             flash(f"Scan failed: {e}", "error")
         return redirect(url_for("review"))
     from config import YOUTUBE_API_KEY
+    client_config = database.build_client_config(client)
     return render_template("scan.html",
                            api_key_set=bool(YOUTUBE_API_KEY),
-                           model_exists=mdl.model_exists(client["id"]))
+                           model_exists=mdl.model_exists(client["id"]),
+                           search_queries=client_config["search_queries"])
 
 
 @app.route("/channels")
