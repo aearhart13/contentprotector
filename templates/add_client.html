@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Add Client — ContentProtector{% endblock %}
+{% block content %}
+<h1>Add Client</h1>
+
+<div class="card">
+    <form action="/clients/add" method="post">
+        <div class="form-row">
+            <label>Creator Name *</label>
+            <input type="text" name="name" placeholder="e.g. Jane Smith" required>
+        </div>
+        <div class="form-row">
+            <label>YouTube Handle</label>
+            <input type="text" name="handle" placeholder="@handle — channel ID will be resolved automatically">
+        </div>
+        <div class="form-row">
+            <label>Name keywords <small class="muted">(comma separated, lowercase)</small></label>
+            <input type="text" name="keywords" placeholder="jane smith, janesmith, js commentary">
+        </div>
+        <div class="form-row">
+            <label>Name variants <small class="muted">(comma separated)</small></label>
+            <input type="text" name="name_variants" placeholder="Jane Smith, JaneSmith, Jane S.">
+        </div>
+        <div class="form-row">
+            <label>Search queries <small class="muted">(one per line)</small></label>
+            <textarea name="search_queries" rows="4" placeholder="Jane Smith&#10;Jane Smith commentary&#10;&quot;Jane Smith&quot; channel"></textarea>
+        </div>
+        <div class="form-row">
+            <label>Content keywords <small class="muted">(comma separated — topics this creator covers)</small></label>
+            <input type="text" name="content_keywords" placeholder="history, politics, analysis, commentary">
+        </div>
+        <div style="margin-top:1.25rem; display:flex; gap:0.75rem;">
+            <button type="submit" class="btn">Add Client</button>
+            <a href="/" class="btn" style="background:#333">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

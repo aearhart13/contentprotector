@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}ContentProtector{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav>
+        <a href="/" class="brand">ContentProtector</a>
+
+        {% if current_client %}
+        <div class="client-switcher">
+            <button class="client-btn" onclick="this.closest('.client-switcher').classList.toggle('open')">
+                <span class="client-dot"></span>
+                {{ current_client.name }}
+                <span class="chevron">▾</span>
+            </button>
+            <div class="client-dropdown">
+                {% for c in all_clients %}
+                <a href="{{ url_for('switch_client', client_id=c.id) }}"
+                   class="client-option {% if c.id == current_client.id %}active{% endif %}">
+                    {{ c.name }}
+                </a>
+                {% endfor %}
+                <div class="client-divider"></div>
+                <a href="{{ url_for('add_client') }}" class="client-option add">+ Add client</a>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="nav-links">
+            <a href="/"         {% if request.endpoint == 'index'    %}class="active"{% endif %}>Dashboard</a>
+            <a href="/review"   {% if request.endpoint == 'review'   %}class="active"{% endif %}>
+                Review
+                {% if stats.pending_review %}
+                <span class="badge">{{ stats.pending_review }}</span>
+                {% endif %}
+            </a>
+            <a href="/channels" {% if request.endpoint == 'channels' %}class="active"{% endif %}>Channels</a>
+            <a href="/scan"     {% if request.endpoint == 'scan'     %}class="active"{% endif %}>Scan</a>
+            <a href="/train"    {% if request.endpoint == 'train'    %}class="active"{% endif %}>Train</a>
+            <a href="/report"   {% if request.endpoint == 'report'   %}class="active"{% endif %}
+               style="color:var(--red)">Report</a>
+            <a href="/clients"  {% if request.endpoint == 'clients'  %}class="active"{% endif %}>Clients</a>
+        </div>
+    </nav>
+
+    <main>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script>
+    // Close client dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.client-switcher')) {
+            document.querySelectorAll('.client-switcher').forEach(el => el.classList.remove('open'));
+        }
+    });
+    </script>
+</body>
+</html>

@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+{% block title %}Report Impersonators — ContentProtector{% endblock %}
+{% block content %}
+<h1>Report Impersonators to YouTube</h1>
+
+<div class="card">
+    <p>YouTube does not provide an API for reporting — each channel must be reported through the YouTube website.</p>
+    <p>For each channel: open it → click the <strong>three-dot menu (⋮)</strong> → <strong>Report user</strong> → <strong>Impersonation</strong>. Then check the box and click <em>Mark as Reported</em> below.</p>
+    <a href="https://support.google.com/youtube/contact/user_impersonation" target="_blank" rel="noopener" class="btn" style="margin-top:0.5rem">
+        Open YouTube Impersonation Form ↗
+    </a>
+</div>
+
+{% if channels %}
+{% set unreported = channels | selectattr("reported_to_youtube", "equalto", 0) | list %}
+{% set reported = channels | selectattr("reported_to_youtube", "equalto", 1) | list %}
+
+<form action="/mark-reported" method="post">
+<div class="card">
+    <div class="card-header">
+        <h2>Confirmed Impersonators ({{ channels|length }})</h2>
+        {% if unreported %}
+        <button type="submit" class="btn danger">Mark Selected as Reported</button>
+        {% endif %}
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th style="width:36px">
+                    <input type="checkbox" id="select-all" title="Select all unreported">
+                </th>
+                <th>Channel</th>
+                <th>Subscribers</th>
+                <th>Score</th>
+                <th>Status</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for ch in channels %}
+        <tr class="{% if ch.reported_to_youtube %}reported-row{% endif %}">
+            <td>
+                {% if not ch.reported_to_youtube %}
+                <input type="checkbox" name="channel_ids" value="{{ ch.channel_id }}" class="report-check">
+                {% endif %}
+            </td>
+            <td>
+                {% if ch.thumbnail_url %}
+                <img src="{{ ch.thumbnail_url }}" alt="" class="avatar-sm">
+                {% endif %}
+                <strong>{{ ch.channel_name or ch.channel_id }}</strong>
+                <br><small class="muted">{{ ch.channel_id }}</small>
+                {% if ch.notes %}
+                <br><small class="muted">{{ ch.notes }}</small>
+                {% endif %}
+            </td>
+            <td>{{ "{:,}".format(ch.subscriber_count or 0) }}</td>
+            <td><span class="score-pill {{ ch.score_level }}">{{ ch.score_pct }}%</span></td>
+            <td>
+                {% if ch.reported_to_youtube %}
+                <span class="tag reported-tag">Reported {{ ch.reported_at[:10] if ch.reported_at else '' }}</span>
+                {% else %}
+                <span class="tag muted">Not yet reported</span>
+                {% endif %}
+            </td>
+            <td>
+                <a href="https://www.youtube.com/channel/{{ ch.channel_id }}" target="_blank" rel="noopener" class="btn sm">
+                    View ↗
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% if unreported %}
+    <div style="padding-top:1rem; border-top:1px solid var(--border); margin-top:0.5rem; display:flex; justify-content:flex-end;">
+        <button type="submit" class="btn danger">Mark Selected as Reported to YouTube</button>
+    </div>
+    {% endif %}
+</div>
+</form>
+
+{% else %}
+<div class="card empty-state">
+    <p>No confirmed impersonators yet.</p>
+    <p>Go to <a href="/review">Review</a> and label flagged channels as <em>Impersonator</em>.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Reporting Steps</h2>
+    <ol>
+        <li>Click <strong>View ↗</strong> to open the channel on YouTube</li>
+        <li>Click the <strong>three-dot menu (⋮)</strong> near the Subscribe button</li>
+        <li>Select <strong>Report user</strong> → <strong>Impersonation</strong></li>
+        <li>State they are impersonating <strong>Ryan Hall, Y'all (@RyanHallYall)</strong></li>
+        <li>Come back here, check the box, and click <em>Mark as Reported</em></li>
+    </ol>
+    <p class="muted" style="margin-top:0.75rem">For high-priority cases, also submit the <a href="https://support.google.com/youtube/contact/user_impersonation" target="_blank">formal impersonation complaint form</a> — it reaches YouTube's Trust &amp; Safety team faster.</p>
+</div>
+
+<script>
+document.getElementById('select-all').addEventListener('change', function() {
+    document.querySelectorAll('.report-check').forEach(cb => cb.checked = this.checked);
+});
+</script>
+{% endblock %}

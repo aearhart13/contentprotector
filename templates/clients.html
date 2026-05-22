@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Clients — ContentProtector{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>Monitored Clients</h1>
+    <a href="/clients/add" class="btn">+ Add Client</a>
+</div>
+
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Creator</th>
+                <th>Handle</th>
+                <th>Channel ID</th>
+                <th>Flagged</th>
+                <th>Confirmed</th>
+                <th>Reported</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for c in all_clients %}
+        {% set cstats = client_stats.get(c.id, {}) %}
+        <tr>
+            <td>
+                <strong>{{ c.name }}</strong>
+                {% if c.id == current_client.id %}
+                <span class="tag reviewed" style="margin-left:0.4rem">Active</span>
+                {% endif %}
+            </td>
+            <td><span class="muted">{{ c.handle or '—' }}</span></td>
+            <td><small class="muted">{{ c.channel_id or '—' }}</small></td>
+            <td>{{ cstats.get('flagged', 0) }}</td>
+            <td>{{ cstats.get('confirmed_impersonators', 0) }}</td>
+            <td>{{ cstats.get('reported_to_youtube', 0) }}</td>
+            <td>
+                <a href="{{ url_for('switch_client', client_id=c.id) }}" class="btn sm">Switch</a>
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

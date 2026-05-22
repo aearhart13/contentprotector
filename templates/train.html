@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}Train Model — ContentProtector{% endblock %}
+{% block content %}
+<h1>Train Model</h1>
+
+<div class="stats-grid">
+    <div class="stat-card {% if num_labeled >= min_samples %}success{% endif %}">
+        <span class="stat-number">{{ num_labeled }}</span>
+        <span class="stat-label">Labeled Examples</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ min_samples }}</span>
+        <span class="stat-label">Minimum to Train</span>
+    </div>
+    <div class="stat-card danger">
+        <span class="stat-number">{{ stats.confirmed_impersonators }}</span>
+        <span class="stat-label">Confirmed Impersonators</span>
+    </div>
+    <div class="stat-card success">
+        <span class="stat-number">{{ stats.false_positives }}</span>
+        <span class="stat-label">Legitimate (Corrected)</span>
+    </div>
+</div>
+
+<div class="card">
+    <h2>Model Status</h2>
+    {% if model_exists and stats.last_model %}
+    <p class="success-text">Active trained model — using ML scoring.</p>
+    <table class="narrow">
+        <tr><td>Model type</td><td><strong>{{ stats.last_model.model_type }}</strong></td></tr>
+        <tr><td>Trained at</td><td>{{ stats.last_model.trained_at[:19] }}</td></tr>
+        <tr><td>Training samples</td><td>{{ stats.last_model.num_samples }}</td></tr>
+        <tr><td>Positive examples</td><td>{{ stats.last_model.num_positives }}</td></tr>
+        <tr><td>Accuracy</td><td>{{ "%.1f"|format(stats.last_model.accuracy * 100) }}%</td></tr>
+        <tr><td>Precision</td><td>{{ "%.1f"|format(stats.last_model.precision_score * 100) }}%</td></tr>
+        <tr><td>Recall</td><td>{{ "%.1f"|format(stats.last_model.recall_score * 100) }}%</td></tr>
+        <tr><td>F1 score</td><td>{{ "%.3f"|format(stats.last_model.f1_score) }}</td></tr>
+    </table>
+    {% elif model_exists %}
+    <p class="success-text">Trained model exists but no run stats recorded.</p>
+    {% else %}
+    <p class="muted">No trained model yet — using heuristic scoring.</p>
+    {% endif %}
+
+    {% if num_labeled >= min_samples %}
+    <form action="/train" method="post" style="margin-top:1.5rem">
+        <button type="submit" class="btn">
+            {% if model_exists %}Retrain Model{% else %}Train Model{% endif %}
+            ({{ num_labeled }} samples)
+        </button>
+    </form>
+    {% else %}
+    <p style="margin-top:1rem">
+        Need <strong>{{ min_samples - num_labeled }}</strong> more labeled examples before training.
+        Go to <a href="/review">Review</a> to label flagged channels.
+    </p>
+    <div class="progress-bar">
+        <div class="progress-fill" style="width: {{ [num_labeled / min_samples * 100, 100]|min }}%"></div>
+    </div>
+    <small class="muted">{{ num_labeled }} / {{ min_samples }}</small>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>Feature Weights (Heuristic)</h2>
+    <p class="muted">These weights are used for scoring before an ML model is trained:</p>
+    <table class="narrow">
+        <tr><td>Name similarity</td><td>35%</td></tr>
+        <tr><td>Description similarity</td><td>20%</td></tr>
+        <tr><td>Name keyword presence</td><td>15%</td></tr>
+        <tr><td>Avatar image similarity</td><td>15%</td></tr>
+        <tr><td>Account age / size signals</td><td>15%</td></tr>
+    </table>
+    <p class="muted" style="margin-top:1rem">The ML model learns optimal weights from your labeled feedback, improving over time.</p>
+</div>
+
+<div class="card">
+    <h2>ML Feedback Loop</h2>
+    <div class="how-it-works">
+        <div class="step">
+            <span class="step-num">1</span>
+            <div><strong>Scan</strong><p>YouTube is searched for channels resembling Ryan Hall Y'all.</p></div>
+        </div>
+        <div class="step">
+            <span class="step-num">2</span>
+            <div><strong>Review</strong><p>Label each flagged channel as Impersonator or Legitimate.</p></div>
+        </div>
+        <div class="step">
+            <span class="step-num">3</span>
+            <div><strong>False Negatives</strong><p>Report any impersonators the tool missed.</p></div>
+        </div>
+        <div class="step">
+            <span class="step-num">4</span>
+            <div><strong>Train</strong><p>Retrain the model with accumulated feedback to reduce errors.</p></div>
+        </div>
+    </div>
+</div>
+{% endblock %}

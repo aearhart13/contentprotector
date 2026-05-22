@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Review — ContentProtector{% endblock %}
+{% block content %}
+<h1>Review Flagged Channels</h1>
+
+<div class="card">
+    <h2>Report a Missed Impersonator</h2>
+    <p class="muted">Found an impersonator the tool didn't flag? Enter its channel ID below (found in the YouTube URL: youtube.com/channel/<strong>UCxxxxxxxx</strong>).</p>
+    <form action="/false-negative" method="post" class="inline-form">
+        <input type="text" name="channel_id" placeholder="YouTube Channel ID (e.g. UCxxxxxxxx)" required>
+        <input type="text" name="notes" placeholder="Notes (optional)">
+        <button type="submit" class="btn danger">Report as Impersonator</button>
+    </form>
+</div>
+
+{% if channels %}
+<p class="muted">{{ channels|length }} channel(s) awaiting your review. Label each one to improve the model.</p>
+
+{% for ch in channels %}
+<div class="channel-card">
+    <div class="channel-header">
+        {% if ch.thumbnail_url %}
+        <img src="{{ ch.thumbnail_url }}" alt="avatar" class="avatar">
+        {% else %}
+        <div class="avatar avatar-placeholder">?</div>
+        {% endif %}
+        <div class="channel-info">
+            <h3>
+                <a href="https://youtube.com/channel/{{ ch.channel_id }}" target="_blank" rel="noopener">
+                    {{ ch.channel_name or ch.channel_id }}
+                </a>
+            </h3>
+            <small class="muted">{{ ch.channel_id }} &bull; {{ "{:,}".format(ch.subscriber_count or 0) }} subscribers &bull; {{ ch.video_count or 0 }} videos</small>
+            {% if ch.published_at %}
+            <small class="muted"> &bull; Created {{ ch.published_at[:10] }}</small>
+            {% endif %}
+        </div>
+        <span class="score-badge {{ ch.score_level }}">{{ ch.score_pct }}%</span>
+    </div>
+
+    {% if ch.description %}
+    <p class="description">{{ ch.description[:300] }}{% if ch.description|length > 300 %}…{% endif %}</p>
+    {% endif %}
+
+    {% if ch.videos %}
+    <div class="video-list">
+        <span class="video-list-label">Recent videos:</span>
+        {% for v in ch.videos %}
+        <a href="https://youtube.com/watch?v={{ v.video_id }}" target="_blank" rel="noopener" class="video-chip
+            {%- if v.title_match_level is defined and v.title_match_level == 'copy' %} copy
+            {%- elif v.title_match_level is defined and v.title_match_level == 'similar' %} similar
+            {%- endif %}">
+            {{ v.title or '(no title)' }}
+        </a>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if ch.features %}
+    <div class="feature-bar">
+        <span class="feature-item">
+            Name match <strong>{{ "%.0f"|format(ch.features.get('name_similarity', 0) * 100) }}%</strong>
+        </span>
+        <span class="feature-item">
+            Desc match <strong>{{ "%.0f"|format(ch.features.get('description_similarity', 0) * 100) }}%</strong>
+        </span>
+        <span class="feature-item">
+            Keywords <strong>{{ "%.0f"|format(ch.features.get('name_keywords', 0) * 100) }}%</strong>
+        </span>
+        <span class="feature-item">
+            Avatar match <strong>{{ "%.0f"|format(ch.features.get('avatar_similarity', 0) * 100) }}%</strong>
+        </span>
+        <span class="feature-item">
+            Acct signals <strong>{{ "%.0f"|format([ch.features.get('account_signals', 0), 0]|max * 100) }}%</strong>
+        </span>
+        <span class="feature-item">
+            Title sim <strong>{{ "%.0f"|format(ch.features.get('video_title_similarity', 0) * 100) }}%</strong>
+        </span>
+        <span class="feature-item">
+            Weather content <strong>{{ "%.0f"|format(ch.features.get('weather_content_score', 0) * 100) }}%</strong>
+        </span>
+        <span class="feature-item">
+            Title copies <strong>{{ "%.0f"|format(ch.features.get('title_copy_score', 0) * 100) }}%</strong>
+        </span>
+    </div>
+    {% endif %}
+
+    <form action="/feedback/{{ ch.channel_id }}" method="post" class="feedback-form">
+        <textarea name="notes" placeholder="Optional notes about this channel…" rows="2"></textarea>
+        <div class="feedback-buttons">
+            <button type="submit" name="label" value="1" class="btn danger">Impersonator</button>
+            <button type="submit" name="label" value="0" class="btn success">Legitimate Channel</button>
+        </div>
+    </form>
+</div>
+{% endfor %}
+
+{% else %}
+<div class="card empty-state">
+    <p>No channels pending review.</p>
+    <a href="/scan" class="btn">Run a Scan</a>
+</div>
+{% endif %}
+{% endblock %}

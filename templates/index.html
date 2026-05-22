@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — ContentProtector{% endblock %}
+{% block content %}
+<h1>Dashboard</h1>
+
+<div class="stats-grid">
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.total_channels }}</span>
+        <span class="stat-label">Channels Analyzed</span>
+    </div>
+    <div class="stat-card danger">
+        <span class="stat-number">{{ stats.flagged }}</span>
+        <span class="stat-label">Flagged Suspicious</span>
+    </div>
+    <div class="stat-card warn">
+        <span class="stat-number">{{ stats.pending_review }}</span>
+        <span class="stat-label">Pending Review</span>
+    </div>
+    <div class="stat-card danger">
+        <span class="stat-number">{{ stats.confirmed_impersonators }}</span>
+        <span class="stat-label">Confirmed Impersonators</span>
+    </div>
+    <div class="stat-card success">
+        <span class="stat-number">{{ stats.false_positives }}</span>
+        <span class="stat-label">False Positives Corrected</span>
+    </div>
+    <div class="stat-card">
+        <span class="stat-number">{{ stats.reported_to_youtube }}</span>
+        <span class="stat-label">Reported to YouTube</span>
+    </div>
+</div>
+
+{% if stats.last_model %}
+<div class="card">
+    <h2>Active ML Model</h2>
+    <div class="model-stats">
+        <span>Type: <strong>{{ stats.last_model.model_type }}</strong></span>
+        <span>Trained: <strong>{{ stats.last_model.trained_at[:10] }}</strong></span>
+        <span>Samples: <strong>{{ stats.last_model.num_samples }}</strong></span>
+        <span>F1: <strong>{{ "%.3f"|format(stats.last_model.f1_score) }}</strong></span>
+        <span>Accuracy: <strong>{{ "%.3f"|format(stats.last_model.accuracy) }}</strong></span>
+        <span>Recall: <strong>{{ "%.3f"|format(stats.last_model.recall_score) }}</strong></span>
+    </div>
+</div>
+{% else %}
+<div class="card">
+    <h2>Model Status</h2>
+    <p>Using <strong>heuristic scoring</strong> (no trained model yet).</p>
+    <p>Review at least {{ 20 }} channels, then <a href="/train">train the ML model</a> for improved accuracy.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">
+        <h2>Recently Flagged Channels</h2>
+        <a href="/review" class="btn">Review All</a>
+    </div>
+    {% if channels %}
+    <table>
+        <thead>
+            <tr>
+                <th>Channel</th>
+                <th>Score</th>
+                <th>Subscribers</th>
+                <th>Name Sim</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for ch in channels %}
+        <tr>
+            <td>
+                <a href="https://youtube.com/channel/{{ ch.channel_id }}" target="_blank" rel="noopener">
+                    {{ ch.channel_name or ch.channel_id }}
+                </a>
+                <br><small class="muted">{{ ch.channel_id }}</small>
+            </td>
+            <td>
+                <span class="score-pill {{ ch.score_level }}">{{ ch.score_pct }}%</span>
+            </td>
+            <td>{{ "{:,}".format(ch.subscriber_count or 0) }}</td>
+            <td>{{ "%.0f"|format(ch.features.get('name_similarity', 0) * 100) }}%</td>
+            <td>
+                {% if ch.reviewed %}
+                <span class="tag reviewed">Reviewed</span>
+                {% else %}
+                <a href="/review" class="btn sm">Review</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p class="empty-state">No flagged channels yet. <a href="/scan">Run a scan</a> to get started.</p>
+    {% endif %}
+</div>
+
+<div class="card">
+    <h2>How It Works</h2>
+    <div class="how-it-works">
+        <div class="step">
+            <span class="step-num">1</span>
+            <div>
+                <strong>Scan</strong>
+                <p>Searches YouTube for channels with names similar to Ryan Hall Y'all using the YouTube Data API.</p>
+            </div>
+        </div>
+        <div class="step">
+            <span class="step-num">2</span>
+            <div>
+                <strong>Score</strong>
+                <p>Each channel is scored using name similarity, description similarity, profile image comparison, and account age signals.</p>
+            </div>
+        </div>
+        <div class="step">
+            <span class="step-num">3</span>
+            <div>
+                <strong>Review</strong>
+                <p>You label each flagged channel as <em>Impersonator</em> or <em>Legitimate</em>. You can also report channels the tool missed.</p>
+            </div>
+        </div>
+        <div class="step">
+            <span class="step-num">4</span>
+            <div>
+                <strong>Train</strong>
+                <p>Once you have 20+ labeled examples, train the ML model. It improves with every correction you make.</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Scan — ContentProtector{% endblock %}
+{% block content %}
+<h1>Run a Scan</h1>
+
+<div class="card">
+    <h2>What happens during a scan</h2>
+    <ol>
+        <li>Searches YouTube for channels using these queries:
+            <ul>
+                <li>"Ryan Hall Y'all"</li>
+                <li>"Ryan Hall Yall weather"</li>
+                <li>"Ryan Hall storm chase"</li>
+                <li>"Ryan Hall" weather channel</li>
+                <li>"Ryan Hall tornado"</li>
+            </ul>
+        </li>
+        <li>Fetches full details for each discovered channel</li>
+        <li>Extracts features: name similarity, description text, avatar image, account age</li>
+        <li>Scores each channel using {% if model_exists %}the trained ML model{% else %}heuristic weights{% endif %}</li>
+        <li>Channels scoring above 45% are flagged for review</li>
+    </ol>
+    <p class="muted">Each scan uses approximately 600–800 YouTube API quota units (free tier allows 10,000/day).</p>
+</div>
+
+<div class="card">
+    <h2>API Key Status</h2>
+    {% if api_key_set %}
+    <p class="success-text">YouTube API key is configured.</p>
+    {% else %}
+    <p class="danger-text">No YouTube API key found.</p>
+    <p>Add your key to the <code>.env</code> file:</p>
+    <pre>YOUTUBE_API_KEY=your_key_here</pre>
+    <p>Get a free key at <strong>Google Cloud Console</strong> (enable the YouTube Data API v3).</p>
+    {% endif %}
+</div>
+
+<form action="/scan" method="post">
+    <button type="submit" class="btn {% if not api_key_set %}disabled{% endif %}" {% if not api_key_set %}disabled{% endif %}>
+        Start Scan
+    </button>
+    <span class="muted">This may take 30–60 seconds.</span>
+</form>
+{% endblock %}

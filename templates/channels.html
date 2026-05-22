@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% block title %}All Channels — ContentProtector{% endblock %}
+{% block content %}
+<div class="page-header">
+    <h1>All Channels</h1>
+    <div class="filter-bar">
+        <a href="/channels" class="btn sm {% if not flagged %}active{% endif %}">All</a>
+        <a href="/channels?flagged=1" class="btn sm {% if flagged %}active{% endif %}">Flagged Only</a>
+    </div>
+</div>
+
+{% if channels %}
+<div class="card">
+    <table>
+        <thead>
+            <tr>
+                <th>Channel</th>
+                <th>Score</th>
+                <th>Name Sim</th>
+                <th>Desc Sim</th>
+                <th>Subscribers</th>
+                <th>Created</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for ch in channels %}
+        <tr>
+            <td>
+                {% if ch.thumbnail_url %}
+                <img src="{{ ch.thumbnail_url }}" alt="" class="avatar-sm">
+                {% endif %}
+                <a href="https://youtube.com/channel/{{ ch.channel_id }}" target="_blank" rel="noopener">
+                    {{ ch.channel_name or ch.channel_id }}
+                </a>
+                <br><small class="muted">{{ ch.channel_id }}</small>
+            </td>
+            <td><span class="score-pill {{ ch.score_level }}">{{ ch.score_pct }}%</span></td>
+            <td>{{ "%.0f"|format(ch.features.get('name_similarity', 0) * 100) }}%</td>
+            <td>{{ "%.0f"|format(ch.features.get('description_similarity', 0) * 100) }}%</td>
+            <td>{{ "{:,}".format(ch.subscriber_count or 0) }}</td>
+            <td>{{ ch.published_at[:10] if ch.published_at else '—' }}</td>
+            <td>
+                {% if ch.reviewed %}
+                <span class="tag reviewed">Reviewed</span>
+                {% elif ch.is_flagged %}
+                <a href="/review" class="btn sm">Review</a>
+                {% else %}
+                <span class="tag muted">Clean</span>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="/channels?page={{ page - 1 }}{% if flagged %}&flagged=1{% endif %}" class="btn sm">Previous</a>
+        {% endif %}
+        <span class="muted">Page {{ page }}</span>
+        {% if channels|length == 50 %}
+        <a href="/channels?page={{ page + 1 }}{% if flagged %}&flagged=1{% endif %}" class="btn sm">Next</a>
+        {% endif %}
+    </div>
+</div>
+{% else %}
+<div class="card empty-state">
+    <p>No channels found. <a href="/scan">Run a scan</a> to populate the database.</p>
+</div>
+{% endif %}
+{% endblock %}
