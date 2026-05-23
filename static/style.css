@@ -279,6 +279,7 @@ table.narrow td:first-child { color: var(--muted); width: 180px; }
 .tag.reviewed      { background: #1a2a1a; color: #5a9a5a; }
 .tag.muted         { background: #1a1a1a; color: var(--muted); border: 1px solid var(--border); }
 .tag.reported-tag  { background: #1a2a3a; color: #5a99cc; border: 1px solid #1a3a5a; }
+.tag.success-tag   { background: #1a3a1a; color: #4caf50; border: 1px solid #2a5a2a; font-weight: 600; }
 .reported-row td   { opacity: 0.6; }
 
 /* ── Channel cards (review page) ── */

@@ -97,6 +97,14 @@ def init_db():
         if "videos" in tables and "client_id" not in _table_cols(conn, "videos"):
             conn.execute("ALTER TABLE videos ADD COLUMN client_id INTEGER NOT NULL DEFAULT 1")
 
+        # Step 3: add takedown tracking columns if missing
+        if "channels" in tables:
+            cols = _table_cols(conn, "channels")
+            if "taken_down" not in cols:
+                conn.execute("ALTER TABLE channels ADD COLUMN taken_down INTEGER DEFAULT 0")
+            if "taken_down_at" not in cols:
+                conn.execute("ALTER TABLE channels ADD COLUMN taken_down_at TEXT")
+
         conn.executescript("""
             CREATE TABLE IF NOT EXISTS clients (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -144,6 +152,8 @@ def init_db():
                 reviewed INTEGER DEFAULT 0,
                 reported_to_youtube INTEGER DEFAULT 0,
                 reported_at TEXT,
+                taken_down INTEGER DEFAULT 0,
+                taken_down_at TEXT,
                 scraped_at TEXT DEFAULT CURRENT_TIMESTAMP,
                 UNIQUE(client_id, channel_id)
             );
@@ -339,6 +349,28 @@ def get_labeled_data(client_id: int) -> list:
     return result
 
 
+def get_reported_active(client_id: int) -> list:
+    """Return reported channels not yet confirmed taken down."""
+    with get_conn() as conn:
+        return [dict(r) for r in conn.execute(
+            "SELECT channel_id FROM channels "
+            "WHERE client_id=? AND reported_to_youtube=1 AND taken_down=0",
+            [client_id],
+        ).fetchall()]
+
+
+def mark_taken_down(client_id: int, channel_ids: list):
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc).isoformat()
+    with get_conn() as conn:
+        for cid in channel_ids:
+            conn.execute(
+                "UPDATE channels SET taken_down=1, taken_down_at=? "
+                "WHERE client_id=? AND channel_id=?",
+                [now, client_id, cid],
+            )
+
+
 def mark_reported(client_id: int, channel_ids: list):
     from datetime import datetime, timezone
     now = datetime.now(timezone.utc).isoformat()
@@ -371,7 +403,8 @@ def get_stats(client_id: int) -> dict:
         confirmed= count("SELECT COUNT(*) FROM feedback WHERE client_id=? AND label=1", client_id)
         false_pos= count("SELECT COUNT(*) FROM feedback WHERE client_id=? AND label=0", client_id)
         pending  = count("SELECT COUNT(*) FROM channels WHERE client_id=? AND is_flagged=1 AND reviewed=0", client_id)
-        reported = count("SELECT COUNT(*) FROM channels WHERE client_id=? AND reported_to_youtube=1", client_id)
+        reported   = count("SELECT COUNT(*) FROM channels WHERE client_id=? AND reported_to_youtube=1", client_id)
+        taken_down = count("SELECT COUNT(*) FROM channels WHERE client_id=? AND taken_down=1", client_id)
         last_model = conn.execute(
             "SELECT * FROM model_runs WHERE client_id=? ORDER BY trained_at DESC LIMIT 1",
             [client_id],
@@ -384,6 +417,7 @@ def get_stats(client_id: int) -> dict:
         "false_positives":      false_pos,
         "pending_review":       pending,
         "reported_to_youtube":  reported,
+        "taken_down":           taken_down,
         "last_model":           dict(last_model) if last_model else None,
     }
 

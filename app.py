@@ -126,9 +126,11 @@ def scan():
         try:
             from scraper import run_scan
             result = run_scan(client["id"])
+            td = result.get("taken_down", 0)
+            td_msg = f", {td} confirmed taken down by YouTube 🎉" if td else ""
             flash(
                 f"Scan complete for {client['name']}: "
-                f"{result['scanned']} channels analyzed, {result['flagged']} flagged.",
+                f"{result['scanned']} channels analyzed, {result['flagged']} flagged{td_msg}.",
                 "success",
             )
         except ValueError as e:
@@ -260,4 +262,4 @@ def api_stats():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5000)
+    app.run(debug=True, port=5000, use_reloader=False)
