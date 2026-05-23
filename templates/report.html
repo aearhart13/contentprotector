@@ -57,7 +57,9 @@
             <td>{{ "{:,}".format(ch.subscriber_count or 0) }}</td>
             <td><span class="score-pill {{ ch.score_level }}">{{ ch.score_pct }}%</span></td>
             <td>
-                {% if ch.reported_to_youtube %}
+                {% if ch.taken_down %}
+                <span class="tag success-tag">Taken Down ✓ {{ ch.taken_down_at[:10] if ch.taken_down_at else '' }}</span>
+                {% elif ch.reported_to_youtube %}
                 <span class="tag reported-tag">Reported {{ ch.reported_at[:10] if ch.reported_at else '' }}</span>
                 {% else %}
                 <span class="tag muted">Not yet reported</span>

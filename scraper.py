@@ -134,6 +134,34 @@ def _download_reference_data(youtube, client: dict):
         log.warning("Could not download reference data for %s: %s", client["name"], e)
 
 
+def _check_takedowns(youtube, client_id: int) -> int:
+    """Check reported channels; mark any that no longer exist as taken down.
+    Returns the number of newly confirmed takedowns."""
+    candidates = database.get_reported_active(client_id)
+    if not candidates:
+        return 0
+
+    ids = [c["channel_id"] for c in candidates]
+    taken_down = []
+
+    for i in range(0, len(ids), 50):
+        batch = ids[i:i + 50]
+        try:
+            resp = (youtube.channels()
+                    .list(part="id", id=",".join(batch))
+                    .execute())
+            found = {item["id"] for item in resp.get("items", [])}
+            taken_down.extend(cid for cid in batch if cid not in found)
+        except Exception as e:
+            log.warning("Takedown check error: %s", e)
+
+    if taken_down:
+        database.mark_taken_down(client_id, taken_down)
+        log.info("Client %d: %d channel(s) confirmed taken down by YouTube.", client_id, len(taken_down))
+
+    return len(taken_down)
+
+
 def run_scan(client_id: int) -> dict:
     """Run a full scan for one client. Returns {scanned, flagged}."""
     client_row = database.get_client(client_id)
@@ -215,4 +243,5 @@ def run_scan(client_id: int) -> dict:
         log.info("Client %d | %s | score=%.2f flagged=%s videos=%d",
                  client_id, channel_data["channel_name"], score, bool(is_flagged), len(candidate_videos))
 
-    return {"scanned": scanned, "flagged": flagged}
+    taken_down = _check_takedowns(youtube, client_id)
+    return {"scanned": scanned, "flagged": flagged, "taken_down": taken_down}
